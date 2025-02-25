@@ -1456,12 +1456,14 @@ class Linkedin(object):
             return False
 
         if not profile_urn:
-            profile_urn_string = self.get_profile(public_id=profile_public_id)[
-                "profile_urn"
-            ]
+            profile_urn_string = self.get_profile(public_id=profile_public_id)
+            if not profile_urn_string:
+                return False, profile_urn_string
+            profile_id = profile_urn_string['positionGroupView']['profileId']
+            
             # Returns string of the form 'urn:li:fs_miniProfile:ACoAACX1hoMBvWqTY21JGe0z91mnmjmLy9Wen4w'
             # We extract the last part of the string
-            profile_urn = profile_urn_string.split(":")[-1]
+            profile_urn = profile_id.split(":")[-1]
 
         payload = {
             "invitee": {
@@ -1483,10 +1485,10 @@ class Linkedin(object):
         # Check for connection_response.status_code == 400 and connection_response.json().get('data', {}).get('code') == 'CANT_RESEND_YET'
         # If above condition is True then request has been already sent, (might be pending or already connected)
         if res.ok:
-            return False
+            return True, profile_urn_string
         else:
-            return True
-
+            return False, profile_urn_string
+            
     def remove_connection(self, public_profile_id: str):
         """Remove a given profile as a connection.
 
