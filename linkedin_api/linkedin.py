@@ -680,7 +680,6 @@ class Linkedin(object):
             f"/identity/profiles/{public_id or urn_id}/profileContactInfo"
         )
         data = res.json()
-
         contact_info = {
             "email_address": data.get("emailAddress"),
             "websites": [],
@@ -695,7 +694,7 @@ class Linkedin(object):
             if "com.linkedin.voyager.identity.profile.StandardWebsite" in item["type"]:
                 item["label"] = item["type"][
                     "com.linkedin.voyager.identity.profile.StandardWebsite"
-                ]["category"]
+                ]["category"].lower()
             elif "" in item["type"]:
                 item["label"] = item["type"][
                     "com.linkedin.voyager.identity.profile.CustomWebsite"
@@ -748,18 +747,16 @@ class Linkedin(object):
         """
         # NOTE this still works for now, but will probably eventually have to be converted to
         # https://www.linkedin.com/voyager/api/identity/profiles/ACoAAAKT9JQBsH7LwKaE9Myay9WcX8OVGuDq9Uw
+        print(public_id, urn_id,".........................")
         res = self._fetch(f"/identity/profiles/{public_id or urn_id}/profileView")
+        print("::::::::::::::::::",res)
+        # if data and "status" in data and data["status"] != 200:
         if res.status_code != 200:
-            self.logger.info("request failed [status={}]".format(res.status_code))
-            raise Exception(
-                "Request failed: get_profile. Try refreshing cookies or solving challenge in a browser."
-            )
-
-        data = res.json()
-        if data and "status" in data and data["status"] != 200:
-            self.logger.info("request failed: {}".format(data["message"]))
+            self.logger.info("request failed: {}".format(res.status_code))
+            # self.logger.info("request failed: {}".format(data["message"]))
             return {}
-
+        data = res.json()
+        return data
         # massage [profile] data
         profile = data["profile"]
         if "miniProfile" in profile:
@@ -1320,7 +1317,6 @@ class Linkedin(object):
             },
             "dedupeByClientGeneratedToken": False,
         }
-
         if conversation_urn_id and not recipients:
             res = self._post(
                 f"/messaging/conversations/{conversation_urn_id}/events",
@@ -1339,7 +1335,6 @@ class Linkedin(object):
                 params=params,
                 data=json.dumps(payload),
             )
-
         return res.status_code != 201
 
     def mark_conversation_as_seen(self, conversation_urn_id: str):
@@ -1456,12 +1451,14 @@ class Linkedin(object):
             return False
 
         if not profile_urn:
-            profile_urn_string = self.get_profile(public_id=profile_public_id)[
-                "profile_urn"
-            ]
+            profile_urn_string = self.get_profile(public_id=profile_public_id)
+            profile_id = profile_urn_string['positionGroupView']['profileId']
+            # profile_urn_string = self.get_profile(public_id=profile_public_id)[
+            #     "profileId"
+            # ]
             # Returns string of the form 'urn:li:fs_miniProfile:ACoAACX1hoMBvWqTY21JGe0z91mnmjmLy9Wen4w'
             # We extract the last part of the string
-            profile_urn = profile_urn_string.split(":")[-1]
+            profile_urn = profile_id.split(":")[-1]
 
         payload = {
             "invitee": {
