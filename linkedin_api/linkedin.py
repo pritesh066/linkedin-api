@@ -1264,6 +1264,8 @@ class Linkedin(object):
         me_profile = self.client.metadata.get("me", {})
         if not self.client.metadata.get("me") or not use_cache:
             res = self._fetch(f"/me")
+            if res.status_code != 200:
+                return {}
             me_profile = res.json()
             # cache profile
             self.client.metadata["me"] = me_profile
